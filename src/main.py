@@ -1,45 +1,23 @@
-from data_fetcher import DataFetcher
-from strategy import TradingStrategy
+import ccxt
+from strategy import MovingAverageCrossoverStrategy
 from backtester import Backtester
-from datetime import datetime, timedelta
 
 def main():
-    # Initialize DataFetcher and get available symbols
-    fetcher = DataFetcher()
-    symbols = fetcher.get_available_symbols()
+    exchange = ccxt.mexc()
+    symbol = 'BTC/USDT'
+    timeframe = '1h'
+    
+    backtester = Backtester(exchange, symbol, timeframe)
+    strategy = MovingAverageCrossoverStrategy(short_window=50, long_window=200)
+    
+    results = backtester.run_backtest(strategy, '2023-01-01T00:00:00Z', '2023-12-31T23:59:59Z')
+    print(f"Backtest Results for {strategy.name}:")
+    print(f"Total Return: {results['total_return']:.2%}")
+    print(f"Sharpe Ratio: {results['sharpe_ratio']:.2f}")
+    print(f"Max Drawdown: {results['max_drawdown']:.2%}")
 
-    if not symbols:
-        print("No symbols available. Exiting.")
-        return
-
-    # Choose the first symbol for demonstration
-    symbol = symbols[0]
-    print(f"Running backtest for {symbol}")
-
-    # Fetch historical data
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=365)  # 1 year of data
-    data = fetcher.fetch_data(symbol, '1d', int(start_date.timestamp() * 1000), 365)
-
-    if data is None:
-        print("Failed to fetch data. Exiting.")
-        return
-
-    # Initialize strategy and backtester
-    strategy = TradingStrategy(short_window=50, long_window=200)
-    backtester = Backtester(strategy, data)
-
-    # Run backtest
-    backtester.run()
-
-    # Plot results
-    backtester.plot_results()
-
-    # Print performance metrics
-    metrics = backtester.get_performance_metrics()
-    print("Performance Metrics:")
-    for key, value in metrics.items():
-        print(f"{key}: {value}")
+    # Uncomment the following line to display the plot (Note: This won't work in a headless environment)
+    # backtester.plot_results(data, signals)
 
 if __name__ == "__main__":
     main()

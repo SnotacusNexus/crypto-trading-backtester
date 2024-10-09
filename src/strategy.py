@@ -1,20 +1,21 @@
 import pandas as pd
-import numpy as np
 
-class TradingStrategy:
-    def __init__(self, short_window=50, long_window=200):
+class MovingAverageCrossoverStrategy:
+    def __init__(self, short_window: int, long_window: int):
+        self.name = f"MA Crossover ({short_window}, {long_window})"
         self.short_window = short_window
         self.long_window = long_window
 
-    def generate_signals(self, data):
-        signals = pd.DataFrame(index=data.index)
-        signals['signal'] = 0.0
+    def generate_signals(self, data: pd.DataFrame) -> pd.Series:
+        signals = pd.Series(index=data.index, dtype=int)
+        signals.iloc[:] = 0
 
-        signals['short_mavg'] = data['close'].rolling(window=self.short_window, min_periods=1, center=False).mean()
-        signals['long_mavg'] = data['close'].rolling(window=self.long_window, min_periods=1, center=False).mean()
+        # Calculate moving averages
+        short_ma = data['close'].rolling(window=self.short_window).mean()
+        long_ma = data['close'].rolling(window=self.long_window).mean()
 
-        signals['signal'][self.short_window:] = np.where(signals['short_mavg'][self.short_window:] 
-                                                         > signals['long_mavg'][self.short_window:], 1.0, 0.0)   
-        signals['positions'] = signals['signal'].diff()
+        # Generate buy and sell signals
+        signals[short_ma > long_ma] = 1  # Buy signal
+        signals[short_ma < long_ma] = -1  # Sell signal
 
         return signals
